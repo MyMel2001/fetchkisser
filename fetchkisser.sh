@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 use_kissy="false"
 # Function to display ASCII art based on the current distro's logo or Tux
 display_ascii_art() {
@@ -129,7 +128,7 @@ display_system_info() {
     echo "-------------------"
     echo "Hostname: $(hostname)"
     echo "Kernel: $(uname -r)"
-    echo "Processor: $(uname -p)"
+    echo "Processor: $(uname -m)"
     echo "Uptime: $(uptime -p)"
     echo "RAM Total: $(free -m | awk '/^Mem:/{print $2 " MB"}')"
     echo "RAM Free: $(free -m | awk '/^Mem:/{print $4 " MB"}')"
@@ -212,39 +211,67 @@ ASCII
 
 # Main function
 main() {
-    while [[ $# -gt 0 ]]; do
-        case $1 in
+    kissy=false
+    mode="none"
+
+    for arg in "$@"; do
+        case "$arg" in
             -bk)
-                use_kissy="true"
-                ascii_displayer "$use_kissy"
-                display_system_info
-                #display_package_manager_info
-                #echo "Is Arch BTW: $(is_arch)"
-                shift
+                kissy=true
                 ;;
             -a | --all)
-                ascii_displayer "$use_kissy"
-                display_system_info
-                display_package_manager_info
-                echo "Is Arch BTW: $(is_arch)"
+                if [ "$mode" = "na" ]; then
+                    echo "Error: Cannot combine -a/--all and -NA"
+                    display_usage
+                    exit 1
+                fi
+                mode="all"
                 ;;
             -NA)
-                display_system_info
-                display_package_manager_info
-                echo "Is Arch BTW: $(is_arch)"
+                if [ "$mode" = "all" ]; then
+                    echo "Error: Cannot combine -a/--all and -NA"
+                    display_usage
+                    exit 1
+                fi
+                mode="na"
                 ;;
             -h | --help)
                 display_usage
+                exit 0
                 ;;
             *)
-                echo "Error: Invalid option"
+                echo "Error: Invalid option $arg"
                 display_usage
+                exit 1
                 ;;
         esac
-        shift
     done
 
+    if [ "$mode" = "none" ]; then
+        if $kissy; then
+            mode="bk"
+        else
+            mode="all"
+        fi
+    fi
 
+    case "$mode" in
+        all)
+            ascii_displayer "$kissy"
+            display_system_info
+            display_package_manager_info
+            echo "Is Arch BTW: $(is_arch)"
+            ;;
+        na)
+            display_system_info
+            display_package_manager_info
+            echo "Is Arch BTW: $(is_arch)"
+            ;;
+        bk)
+            ascii_displayer "true"
+            display_system_info
+            ;;
+    esac
 }
 
 # Run the main function
